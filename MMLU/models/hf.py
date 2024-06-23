@@ -25,19 +25,16 @@ class CasualLM(LLMBase):
     - model_path (str): The path/name for the desired langauge model.
     """
 
-    def __init__(
-        self, model_path=None, arch=None, max_tokens=1024, infer_mode="generation"
-    ):
+    def __init__(self, model_path=None, arch=None, max_tokens=1024, infer_mode="generation"):
 
         if arch is None:
             self.arch = model_path
         else:
             self.arch = arch
-        # default
+        
         self.tokenizer_use_fast = True
         self.max_tokens = max_tokens
         self.verbose = True
-
         self.infer_mode = infer_mode
 
         super().__init__(model_path=model_path)
@@ -52,26 +49,29 @@ class CasualLM(LLMBase):
             low_cpu_mem_usage=True,
             device_map="auto",
         ).eval()
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        tokenizer = AutoTokenizer.from_pretrained(self.arch)
         tokenizer.padding_side = "left"
         tokenizer.pad_token = tokenizer.eos_token
+        model.generation_config.pad_token_id = model.generation_config.eos_token_id
 
         self.model = model
         self.tokenizer = tokenizer
 
-        print(f"> Loading the provided {self.arch} checkpoint from '{model_path}'.")
+        print(
+            f"> Loading the provided {self.arch} checkpoint from '{model_path}'.")
 
     def query(self, prompt, choices=None):
         """
         Query an open-source model with a given text prompt.
 
         Parameters:
-        - text (str): The text prompt to query the model.
+        - prompt (str): The text prompt to query the model.
 
-        Returns:
+        Returns[]:
         - str: The model's output.
+        - list: Predicted logits for options
         """
-        print(prompt)
+        # print(prompt)
         if self.infer_mode == "generation":
             return self.query_generation(prompt)
         elif self.infer_mode == "logits":
@@ -79,32 +79,31 @@ class CasualLM(LLMBase):
 
     @torch.no_grad()
     def query_generation(self, prompt):
-        model_inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
-
-        generated_ids = self.model.generate(
-            **model_inputs, max_new_tokens=self.max_tokens, do_sample=True
-        )
-
-        pred = self.tokenizer.batch_decode(
-            generated_ids[:, model_inputs["input_ids"].shape[1] :],
-            skip_special_tokens=True,
-            clean_up_tokenization_spaces=True,
-        )[0]
+        try:
+            model_inputs = self.tokenizer(
+                prompt, return_tensors="pt").to(self.model.device)
+            generated_ids = self.model.generate(
+                **model_inputs, max_new_tokens=self.max_tokens, do_sample=True)
+            pred = self.tokenizer.batch_decode(generated_ids[:, model_inputs["input_ids"].shape[1]:], skip_special_tokens=True,
+                                               clean_up_tokenization_spaces=True)[0]
+        except Exception as e:
+            print(e)
+            pred = ""
         return pred, None
 
     @torch.no_grad()
     def query_logits(self, prompt, choices):
-        input_ids = self.tokenizer(prompt, return_tensors="pt").input_ids.to(
-            self.model.device
-        )
-
+        input_ids = self.tokenizer(
+            prompt, return_tensors="pt").input_ids.to(self.model.device)
         logits = self.model(input_ids=input_ids).logits[0, -1]
         target_logits = []
         for choice in choices:
             target_logits.append(logits[self.tokenizer(choice).input_ids[-1]])
         probs = (
             torch.nn.functional.softmax(
-                torch.tensor(target_logits).float(),
+                torch.tensor(
+                    target_logits
+                ).float(),
                 dim=0,
             )
             .detach()
@@ -120,27 +119,8 @@ class CasualLM(LLMBase):
         return pred, probs
 
 
-class PeftCasualLM(CasualLM):  # parameter efficient finetuning
-    def load_model(self):
-        super().load_model(self.arch)
-        from peft.peft_model import PeftModel
-
-        print(f"load peft module from {self.model_path}")
-        try:
-            self.model = PeftModel.from_pretrained(
-                self.model, self.model_path, device_map="auto"
-            )
-        except:
-            self.model = PeftModel.from_pretrained(
-                self.model,
-                self.model_path,
-                device_map="auto",
-                offload_folder="./offload",
-            )
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     # Testing purposes
-    model = CasualLM("gpt2")
-    print(model.query(["hello. how are you?", "what is your name?"]))
+    model = CasualLM('gpt2')
+    print(model.query(['hello. how are you?', 'what is your name?']))
     print("DONE")

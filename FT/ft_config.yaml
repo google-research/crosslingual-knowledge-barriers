@@ -1,0 +1,10 @@
+LoRA:
+  r: 0
+  alpha: 32
+  dropout: 0.05
+batch_size: 2
+gradient_accumulation_steps: 8
+num_epochs: 1
+lr: 2.0e-05
+weight_decay: 0.01
+seed: 42

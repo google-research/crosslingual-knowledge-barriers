@@ -26,17 +26,18 @@ class LLMBase:
 
         self.model_path = model_path  # file path or URL that points to the model
         self.api_key = api_key  # API key for accessing LLMs (e.g., ChatGPT)
+        
         self.load_model()
 
     def load_model(self):
         pass
 
-    def query(self, text):
+    def query(self, prompt):
         """
         Query a model with a given text prompt.
 
         Parameters:
-        - text (str): The text prompt to query the model.
+        - prompt (str): The text prompt to query the model.
 
         Returns:
         - str: The model's output.

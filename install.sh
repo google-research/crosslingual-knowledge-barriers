@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-conda create -n mmlu python=3.9
-conda activate mmlu
-pip install torch==1.9.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html
 pip install -U transformers
 pip install pandas
 pip install accelerate==0.27.2
 pip install googletrans==4.0.0-rc1
 pip install openai==0.28.0
+pip install datasets

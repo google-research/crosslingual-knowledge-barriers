@@ -12,384 +12,219 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import random
 import pandas as pd
 import os
+import argparse
 from googletrans import Translator
-
 translator = Translator()
-task = "astronomy"
-trans_lan = "fr"
 choices = ["A", "B", "C", "D"]
-import random
-
 random.seed(42)
-split = "test"
-# split="dev"
+
+
 TASKS = [
-    "abstract_algebra",
-    "anatomy",
-    "astronomy",
-    "business_ethics",
-    "clinical_knowledge",
-    "college_biology",
-    "college_chemistry",
-    "college_computer_science",
-    "college_mathematics",
-    "college_medicine",
-    "college_physics",
-    "computer_security",
-    "conceptual_physics",
-    "econometrics",
-    "electrical_engineering",
-    "elementary_mathematics",
-    "formal_logic",
-    "global_facts",
-    "high_school_biology",
-    "high_school_chemistry",
-    "high_school_computer_science",
-    "high_school_european_history",
-    "high_school_geography",
-    "high_school_government_and_politics",
-    "high_school_macroeconomics",
-    "high_school_mathematics",
-    "high_school_microeconomics",
-    "high_school_physics",
-    "high_school_psychology",
-    "high_school_statistics",
-    "high_school_us_history",
-    "high_school_world_history",
-    "human_aging",
-    "human_sexuality",
-    "international_law",
-    "jurisprudence",
-    "logical_fallacies",
-    "machine_learning",
-    "management",
-    "marketing",
-    "medical_genetics",
-    "miscellaneous",
-    "moral_disputes",
-    "moral_scenarios",
-    "nutrition",
-    "philosophy",
-    "prehistory",
-    "professional_accounting",
-    "professional_law",
-    "professional_medicine",
-    "professional_psychology",
-    "public_relations",
-    "security_studies",
-    "sociology",
-    "us_foreign_policy",
-    "virology",
-    "world_religions",
-]
+    'abstract_algebra',
+    'anatomy',
+    'astronomy',
+    'business_ethics',
+    'clinical_knowledge',
+    'college_biology',
+    'college_chemistry',
+    'college_computer_science',
+    'college_mathematics',
+    'college_medicine',
+    'college_physics',
+    'computer_security',
+    'conceptual_physics',
+    'econometrics',
+    'electrical_engineering',
+    'elementary_mathematics',
+    'formal_logic',
+    'global_facts',
+    'high_school_biology',
+    'high_school_chemistry',
+    'high_school_computer_science',
+    'high_school_european_history',
+    'high_school_geography',
+    'high_school_government_and_politics',
+    'high_school_macroeconomics',
+    'high_school_mathematics',
+    'high_school_microeconomics',
+    'high_school_physics',
+    'high_school_psychology',
+    'high_school_statistics',
+    'high_school_us_history',
+    'high_school_world_history',
+    'human_aging',
+    'human_sexuality',
+    'international_law',
+    'jurisprudence',
+    'logical_fallacies',
+    'machine_learning',
+    'management',
+    'marketing',
+    'medical_genetics',
+    'miscellaneous',
+    'moral_disputes',
+    'moral_scenarios',
+    'nutrition',
+    'philosophy',
+    'prehistory',
+    'professional_accounting',
+    'professional_law',
+    'professional_medicine',
+    'professional_psychology',
+    'public_relations',
+    'security_studies',
+    'sociology',
+    'us_foreign_policy',
+    'virology',
+    'world_religions']
 
 
-def translate_test_task_full(task, trans_lan):
-    # Step 1: Read the CSV file into a DataFrame
-    save_folder = os.path.join("data", f"{split}_full_{trans_lan}")
-    os.makedirs(save_folder, exist_ok=True)
-    save_fname = os.path.join(save_folder, task + f"_{split}.csv")
+def save_translated_df(df, folder, filename):
+    os.makedirs(folder, exist_ok=True)
+    df.to_csv(os.path.join(folder, filename), header=None, index=False)
+
+
+def translate_text(text, src='en', dest='fr'):
+    try:
+        return translator.translate(text, src=src, dest=dest).text
+    except Exception as e:
+        print(f"Translation error for text: {text}\n{e}")
+        return text
+
+
+def translate_test_task_full(split, task, trans_lan):
+    save_folder = os.path.join('data', f"{split}_full_{trans_lan}")
+    save_fname = os.path.join(save_folder, f"{task}_{split}.csv")
     if os.path.isfile(save_fname):
-        return  ## already have!
+        return
 
-    test_df = pd.read_csv(
-        os.path.join("data", split, task + f"_{split}.csv"), header=None
-    )
+    test_df = pd.read_csv(os.path.join(
+        'data', split, f"{task}_{split}.csv"), header=None)
     for idx in range(test_df.shape[0]):
-        # get prompt and make sure it fits
-        k = test_df.shape[1] - 2  # number of choices
+        # translate question
+        test_df.iloc[idx, 0] = translate_text(
+            test_df.iloc[idx, 0], dest=trans_lan)
+        # translate options
+        for j in range(test_df.shape[1] - 2):
+            test_df.iloc[idx, j +
+                         1] = translate_text(test_df.iloc[idx, j + 1], dest=trans_lan)
 
-        # batch_english=[]
-        prompt = test_df.iloc[idx, 0]
-        try:
-            test_df.iloc[idx, 0] = translator.translate(
-                prompt, src="en", dest=trans_lan
-            ).text
-        except:
-            print("translation error for prompt: ", prompt)
-
-        for j in range(k):
-            try:
-                option_english = test_df.iloc[idx, j + 1]
-                test_df.iloc[idx, j + 1] = translator.translate(
-                    option_english, src="en", dest=trans_lan
-                ).text
-            except:
-                print("translation error for option: ", option_english)
-
-        print(trans_lan, test_df.iloc[idx, 0])
-        print("****")
-
-    test_df.to_csv(save_fname, header=None, index=False)
+    save_translated_df(test_df, save_folder, f"{task}_{split}.csv")
 
 
-def translate_test_task_gt_translate(task, trans_lan):
-    # Step 1: Read the CSV file into a DataFrame
-    test_df = pd.read_csv(
-        os.path.join("data", split, task + f"_{split}.csv"), header=None
-    )
-    for idx in range(test_df.shape[0]):
-        # get prompt and make sure it fits
-        k = test_df.shape[1] - 2  # number of choices
-
-        # prompt_end = format_example(test_df, i, include_answer=False)
-        answer_choice = test_df.iloc[idx, k + 1]
-        answer_index = choices.index(answer_choice)
-
-        option_english = test_df.iloc[idx, answer_index + 1]
-        print("en", option_english)
-        try:
-            option_trans = translator.translate(
-                option_english, src="en", dest=trans_lan
-            ).text
-        except:
-            option_trans = option_english
-
-        print(trans_lan, option_trans)
-        print("****")
-        test_df.iloc[idx, answer_index + 1] = option_trans
-
-    # Step 3: Write the modified DataFrame back to a new CSV file
-    save_folder = os.path.join("data", f"{split}_gt_{trans_lan}")
-    os.makedirs(save_folder, exist_ok=True)
-    test_df.to_csv(
-        os.path.join(save_folder, task + f"_{split}.csv"), header=None, index=False
-    )
-
-
-def translate_test_task_mixup_translate(task):
-    # Step 1: Read the CSV file into a DataFrame
-
-    trans_lan_full = ["en", "fr", "de", "es", "it"]
-    random.shuffle(trans_lan_full)
-
-    test_df = pd.read_csv(
-        os.path.join("data", split, task + f"_{split}.csv"), header=None
-    )
-    for idx in range(test_df.shape[0]):
-        # get prompt and make sure it fits
-        k = test_df.shape[1] - 2  # number of choices
-
-        prompt = test_df.iloc[idx, 0]
-        try:
-            trans_lan = trans_lan_full[0]
-            if trans_lan != "en":
-                test_df.iloc[idx, 0] = translator.translate(
-                    prompt, src="en", dest=trans_lan
-                ).text
-        except:
-            print("translation error for prompt: ", prompt)
-
-        for j in range(k):
-            trans_lan = trans_lan_full[j + 1]
-            try:
-                if trans_lan != "en":
-                    option_english = test_df.iloc[idx, j + 1]
-                    test_df.iloc[idx, j + 1] = translator.translate(
-                        option_english, src="en", dest=trans_lan
-                    ).text
-            except:
-                print("translation error for option: ", option_english)
-
-        print(idx, trans_lan_full[0], test_df.iloc[idx, 0])
-        print("****")
-
-    # Step 3: Write the modified DataFrame back to a new CSV file
-    save_folder = os.path.join("data", f"{split}_mixup")
-    os.makedirs(save_folder, exist_ok=True)
-    test_df.to_csv(
-        os.path.join(save_folder, task + f"_{split}.csv"), header=None, index=False
-    )
-
-
-def translate_test_task_mixup(task):
-    # Step 1: Read the CSV file into a DataFrame
-
-    trans_lan_full = ["en", "fr", "de", "es", "it"]
-    trans_test_df_dict = {}
-    for lan in trans_lan_full[1:]:
-        trans_test_df_dict[lan] = pd.read_csv(
-            os.path.join("data", f"{split}_full_{lan}", task + f"_{split}.csv"),
-            header=None,
-        )
-
-    test_df = pd.read_csv(
-        os.path.join("data", split, task + f"_{split}.csv"), header=None
-    )
+def translate_test_task_mixup(split, task, languages):
+    # languages: a list of translation languages
+    trans_lan_full = ['en'] + languages
+    print(trans_lan_full)
+    trans_test_df_dict = {
+        lan: pd.read_csv(os.path.join(
+            'data', f"{split}_full_{lan}", f"{task}_{split}.csv"), header=None)
+        for lan in trans_lan_full[1:]
+    }
+    test_df = pd.read_csv(os.path.join(
+        'data', split, f"{task}_{split}.csv"), header=None)
 
     for idx in range(test_df.shape[0]):
+        # random order of languages for question and options
         random.shuffle(trans_lan_full)
-        # get prompt and make sure it fits
+
+        # question
+        trans_lan = trans_lan_full[0]
+        if trans_lan != 'en':
+            test_df.iloc[idx, 0] = trans_test_df_dict[trans_lan].iloc[idx, 0]
+
+        # options
         k = test_df.shape[1] - 2  # number of choices
-
-        prompt = test_df.iloc[idx, 0]
-        try:
-            trans_lan = trans_lan_full[0]
-            if trans_lan != "en":
-                # test_df.iloc[idx, 0]= translator.translate(prompt, src='en', dest=trans_lan).text
-                test_df.iloc[idx, 0] = trans_test_df_dict[trans_lan].iloc[idx, 0]
-
-        except:
-            print("translation error for prompt: ", prompt)
-
         for j in range(k):
             trans_lan = trans_lan_full[j + 1]
-            try:
-                if trans_lan != "en":
-                    option_english = test_df.iloc[idx, j + 1]
-                    # test_df.iloc[idx, j+1]= translator.translate(option_english, src='en', dest=trans_lan).text
-                    test_df.iloc[idx, j + 1] = trans_test_df_dict[trans_lan].iloc[
-                        idx, j + 1
-                    ]
-            except:
-                print("translation error for option: ", option_english)
+            if trans_lan != 'en':
+                test_df.iloc[idx, j +
+                             1] = trans_test_df_dict[trans_lan].iloc[idx, j + 1]
 
-        print(idx, trans_lan_full[0], test_df.iloc[idx, 0])
-        print("****")
-
-    # Step 3: Write the modified DataFrame back to a new CSV file
-    save_folder = os.path.join("data", f"{split}_mixup")
-    os.makedirs(save_folder, exist_ok=True)
-    test_df.to_csv(
-        os.path.join(save_folder, task + f"_{split}.csv"), header=None, index=False
-    )
+    save_folder = os.path.join('data', f"{split}_mixup")
+    save_translated_df(test_df, save_folder, f"{task}_{split}.csv")
 
 
-def translate_test_task_wrong_option(task, trans_lan, onewrong=True):
-    # Step 1: Read the CSV file into a DataFrame
-    test_df = pd.read_csv(
-        os.path.join("data", split, task + f"_{split}.csv"), header=None
-    )
-    # trans_lan_full= ['fr','de','es','it']
-    # trans_test_df={}
-
-    # for lan in trans_lan_full:
-
-    trans_test_df = pd.read_csv(
-        os.path.join("data", f"{split}_full_{trans_lan}", task + f"_{split}.csv"),
-        header=None,
-    )
+def translate_test_task_options(split, task, trans_lan, mode='options', onewrong=True):
+    test_df = pd.read_csv(os.path.join(
+        'data', split, f"{task}_{split}.csv"), header=None)
+    trans_test_df = pd.read_csv(os.path.join(
+        'data', f"{split}_full_{trans_lan}", f"{task}_{split}.csv"), header=None)
+    k = test_df.shape[1] - 2  # number of options
 
     for idx in range(test_df.shape[0]):
-        k = test_df.shape[1] - 2  # number of choices
 
-        answer_choice = test_df.iloc[idx, k + 1]
-        answer_index = choices.index(answer_choice)
-        wrong_options_index = [j for j in range(1, k) if j != answer_index]
-
-        if onewrong:
-            wrong_option_idx = random.choice(wrong_options_index)
-            try:
-                test_df.iloc[idx, wrong_option_idx + 1] = trans_test_df.iloc[
-                    idx, wrong_option_idx + 1
-                ]
-            except Exception as e:
-                print(e)
-        else:
-            for wrong_option_idx in wrong_options_index:
-                try:
-                    test_df.iloc[idx, wrong_option_idx + 1] = trans_test_df.iloc[
-                        idx, wrong_option_idx + 1
-                    ]
-                except Exception as e:
-                    print(e)
-        print(trans_lan, test_df.iloc[idx, wrong_option_idx + 1])
-        print("****")
-
-    # Step 3: Write the modified DataFrame back to a new CSV file
-    if onewrong:
-        save_folder = os.path.join("data", f"{split}_onewrong_{trans_lan}")
-    else:
-        save_folder = os.path.join("data", f"{split}_threewrong_{trans_lan}")
-    os.makedirs(save_folder, exist_ok=True)
-    test_df.to_csv(
-        os.path.join(save_folder, task + f"_{split}.csv"), header=None, index=False
-    )
-
-
-def translate_test_task_gt(task, trans_lan):
-
-    test_df = pd.read_csv(
-        os.path.join("data", split, task + f"_{split}.csv"), header=None
-    )
-    trans_test_df = pd.read_csv(
-        os.path.join("data", f"{split}_full_{trans_lan}", task + f"_{split}.csv"),
-        header=None,
-    )
-
-    for idx in range(test_df.shape[0]):
-        k = test_df.shape[1] - 2  # number of choices
-
-        answer_choice = test_df.iloc[idx, k + 1]
-        answer_index = choices.index(answer_choice)
-        try:
-            test_df.iloc[idx, answer_index + 1] = trans_test_df.iloc[
-                idx, answer_index + 1
-            ]
-
-        except Exception as e:
-            print(e)
-
-        print(trans_lan, test_df.iloc[idx, 0], test_df.iloc[idx, answer_index + 1])
-        print("****")
-
-    # Step 3: Write the modified DataFrame back to a new CSV file
-    save_folder = os.path.join("data", f"{split}_gt_{trans_lan}")
-    os.makedirs(save_folder, exist_ok=True)
-    test_df.to_csv(
-        os.path.join(save_folder, task + f"_{split}.csv"), header=None, index=False
-    )
-
-
-def translate_test_task_gt_question(task, trans_lan):
-
-    test_df = pd.read_csv(
-        os.path.join("data", split, task + f"_{split}.csv"), header=None
-    )
-    trans_test_df = pd.read_csv(
-        os.path.join("data", f"{split}_full_{trans_lan}", task + f"_{split}.csv"),
-        header=None,
-    )
-
-    for idx in range(test_df.shape[0]):
-        k = test_df.shape[1] - 2  # number of choices
-
-        answer_choice = test_df.iloc[idx, k + 1]
-        answer_index = choices.index(answer_choice)
-        try:
-            test_df.iloc[idx, answer_index + 1] = trans_test_df.iloc[
-                idx, answer_index + 1
-            ]
+        # trans question
+        if mode in ['question', 'gt_question']:
             test_df.iloc[idx, 0] = trans_test_df.iloc[idx, 0]
 
-        except Exception as e:
-            print(e)
+        if mode in ['gt', 'gt_question']:
+            # trans gt option
+            answer_choice = test_df.iloc[idx, k + 1]
+            answer_index = choices.index(answer_choice)
+            test_df.iloc[idx, answer_index +
+                         1] = trans_test_df.iloc[idx, answer_index+1]
 
-        print(trans_lan, test_df.iloc[idx, 0], test_df.iloc[idx, answer_index + 1])
-        print("****")
+        elif mode == 'options':
+            # trans all options
+            for j in range(k):
+                test_df.iloc[idx, j + 1] = trans_test_df.iloc[idx, j + 1]
+        elif mode == 'wrong_option':
+            answer_choice = test_df.iloc[idx, k + 1]
+            answer_index = choices.index(answer_choice)
+            wrong_options_index = [j for j in range(k) if j != answer_index]
+            if onewrong:
+                wrong_option_idx = random.choice(wrong_options_index)
+                test_df.iloc[idx, wrong_option_idx +
+                             1] = trans_test_df.iloc[idx, wrong_option_idx + 1]
+            else:
+                for wrong_option_idx in wrong_options_index:
+                    test_df.iloc[idx, wrong_option_idx +
+                                 1] = trans_test_df.iloc[idx, wrong_option_idx + 1]
+    save_mode = mode
+    if mode == 'wrong_option':
+        save_mode = "onewrong" if onewrong == True else "threewrong"
+    save_folder = os.path.join('data', f"{split}_{save_mode}_{trans_lan}")
+    save_translated_df(test_df, save_folder, f"{task}_{split}.csv")
 
-    # Step 3: Write the modified DataFrame back to a new CSV file
-    save_folder = os.path.join("data", f"{split}_gt_question_{trans_lan}")
-    os.makedirs(save_folder, exist_ok=True)
-    test_df.to_csv(
-        os.path.join(save_folder, task + f"_{split}.csv"), header=None, index=False
-    )
+
+def process_all_tasks(split, languages, mode):
+    for task in TASKS:
+        if mode == 'full':
+            for trans_lan in languages:
+                translate_test_task_full(split, task, trans_lan)
+                print("done full!", task, trans_lan)
+        elif mode == 'mixup':
+            translate_test_task_mixup(split, task, languages)
+            print("done mixup!", task)
+        else:
+            for trans_lan in languages:
+                if mode in ['question', 'options', 'gt_question', 'gt']:
+                    translate_test_task_options(
+                        split, task, trans_lan, mode=mode)
+                elif mode == "wrong_option":
+                    for onewrong in [True, False]:
+                        translate_test_task_options(
+                            split, task, trans_lan, mode='wrong_option', onewrong=onewrong)
+                print(f"done!", task, trans_lan)
 
 
-# FR- French, DE- German, ES – Spanish, IT- Italian
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Process translation tasks.")
 
+    parser.add_argument('--split', type=str, default='dev',  choices=['dev', 'test'],
+                        help="The dataset split to process")
+    parser.add_argument('--languages', type=str, nargs='+',
+                        default=['fr', 'de', 'es', 'it'], 
+                        help="List of languages for translation")
+    parser.add_argument('--mode', type=str, choices=['full', 'mixup', 'question', 'options',
+                        'gt_question', 'gt', 'wrong_option'], required=True, 
+                        help="Mode of translation")
 
-for task in TASKS:
-
-    translate_test_task_mixup(task)
-
-    # for trans_lan in ['fr','de','es','it']:
-    #     # translate_test_task_full(task,trans_lan) # no
-
-    #     translate_test_task_gt_question(task,trans_lan)
-    #     translate_test_task_gt(task,trans_lan)
-    #     translate_test_task_wrong_option(task,trans_lan, onewrong=True)
-    #     translate_test_task_wrong_option(task,trans_lan, onewrong=False)
-    #     print("done!",task, trans_lan )
+    args = parser.parse_args()
+    print(args)
+    # Main execution
+    process_all_tasks(args.split, args.languages, args.mode)
