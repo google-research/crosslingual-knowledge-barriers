@@ -1,6 +1,6 @@
 # Crosslingual Capabilities and Knowledge Barriers in Multilingual Large Language Models
 <p align="center">
-<a href="https://arxiv.org/abs/">📃 Paper</a>
+<a href="https://arxiv.org/abs/2406.16135">📃 Paper</a>
 •
 <a href="https://huggingface.co/cross-ling-know" >🤗 Data</a>
 •
@@ -8,7 +8,7 @@
 </p>
 
 
-Code for the paper "Crosslingual Capabilities and Knowledge Barriers in Multilingual Large Language Models".
+Code for the paper "<a href="https://arxiv.org/abs/2406.16135">Crosslingual Capabilities and Knowledge Barriers in Multilingual Large Language Models</a>".
 
 This is not an officially supported Google product.
 
@@ -51,5 +51,12 @@ We examine our discovery on a wide range of tasks and release their code in diff
 ## Citation
 If you find this useful in your research, please consider citing our paper:
 ```
-
+@misc{chua2024crosslingual,
+      title={Crosslingual Capabilities and Knowledge Barriers in Multilingual Large Language Models}, 
+      author={Lynn Chua and Badih Ghazi and Yangsibo Huang and Pritish Kamath and Ravi Kumar and Pasin Manurangsi and Amer Sinha and Chulin Xie and Chiyuan Zhang},
+      year={2024},
+      eprint={2406.16135},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
 ```
